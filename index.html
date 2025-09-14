@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Clock Tap → Password → Form</title>
+  <style>
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    .hero {position:relative;width:100%;height:100vh;display:flex;align-items:center;justify-content:center;background:#fff}
+    .hero img { max-width:420px; width:90vw; height:auto; display:block; }
+    /* Hotspot (adjust left/top percentages to position on the central dot) */
+    .hotspot {
+      position:absolute;
+      left:50%;      /* change to X% based on step 4 */
+      top:55%;       /* change to Y% based on step 4 */
+      transform:translate(-50%,-50%);
+      width:50px;    /* touch size (increase for easier tapping) */
+      height:56px;
+      border-radius:50%;
+      background: transparent; /* make transparent later */
+      border:none;
+      cursor:pointer;
+      -webkit-tap-highlight-color: transparent;
+      display:flex;align-items:center;justify-content:center;
+    }
+    @media (max-width:420px){ .hotspot{ width:72px; height:72px; } }
+
+    .overlay{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); padding:20px; z-index:200; }
+    .dialog{ background:#fff; padding:16px; width:100%; max-width:420px; border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,0.2); }
+    .dialog input{ width:100%; padding:12px; font-size:16px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box; }
+    .row{ margin-top:10px }
+    .btn { margin-top:12px; width:100%; padding:12px; border:0; border-radius:8px; font-size:16px; background:#111; color:#fff; }
+    .msg { margin-top:8px; min-height:18px; color:#b00020; }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <!-- Replace src with your image filename if different -->
+    <img id="mainImage" src="clock.png" alt="Tap the clock center"/>
+    <div id="hotspot" class="hotspot" tabindex="0" title="Tap here"></div>
+  </div>
+
+  <div id="overlay" class="overlay" aria-hidden="true">
+    <div class="dialog" role="dialog" aria-modal="true">
+      <div><strong>Enter Password</strong></div>
+      <div class="row"><input id="passwordInput" type="password" placeholder="Password"></div>
+      <div class="msg" id="msg"></div>
+      <button id="okBtn" class="btn">Enter</button>
+      <button id="cancelBtn" style="margin-top:8px;width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;background:#f3f3f3;">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+    // CONFIG: change these
+    const PASSWORD = "time"; // <-- change to your password (note: visible in page source)
+    const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLScIUr3t87IuzmBY1nBzIJ03DQJ1D2Ly47afAOBvSdw9w-H69A/viewform?usp=sharing&ouid=112702045810009839612"; // <-- change
+
+    const hotspot = document.getElementById('hotspot');
+    const overlay = document.getElementById('overlay');
+    const passwordInput = document.getElementById('passwordInput');
+    const okBtn = document.getElementById('okBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const msg = document.getElementById('msg');
+    const mainImage = document.getElementById('mainImage');
+
+    // open dialog
+    function openDialog(e){
+      e && e.preventDefault();
+      msg.textContent = "";
+      passwordInput.value = "";
+      overlay.style.display = "flex";
+      overlay.setAttribute('aria-hidden','false');
+      setTimeout(()=>passwordInput.focus(),60);
+    }
+    // close dialog
+    function closeDialog(){
+      overlay.style.display = "none";
+      overlay.setAttribute('aria-hidden','true');
+    }
+
+    hotspot.addEventListener('click', openDialog);
+    hotspot.addEventListener('touchend', openDialog);
+
+    hotspot.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' ') openDialog(e); });
+    cancelBtn.addEventListener('click', closeDialog);
+    overlay.addEventListener('click', (ev)=> { if(ev.target === overlay) closeDialog(); });
+
+    okBtn.addEventListener('click', checkPassword);
+    passwordInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') checkPassword(); });
+
+    function checkPassword(){
+      if(passwordInput.value === PASSWORD){
+        msg.style.color = 'green';
+        msg.textContent = "Correct — redirecting...";
+        // redirect in same tab:
+        setTimeout(()=> window.location.href = GOOGLE_FORM_URL, 300);
+        // OR open in new tab instead of replacing current tab:
+        // setTimeout(()=> window.open(GOOGLE_FORM_URL, '_blank'), 300);
+      } else {
+        msg.style.color = '#b00020';
+        msg.textContent = "Incorrect password.";
+        passwordInput.focus();
+      }
+    }
+
+    // ---------- HELPER: log click position percentages (useful to compute hotspot left/top) ----------
+    // Open browser DevTools Console, then click the image; it will print percentages you can copy to CSS.
+    mainImage.addEventListener('click', function(e){
+      const r = mainImage.getBoundingClientRect();
+      const px = ((e.clientX - r.left) / r.width) * 100;
+      const py = ((e.clientY - r.top) / r.height) * 100;
+      console.log("Image click at:", px.toFixed(1) + "%", py.toFixed(1) + "%");
+    });
+  </script>
+</body>
+</html>
